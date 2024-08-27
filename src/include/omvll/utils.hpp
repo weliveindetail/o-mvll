@@ -2,8 +2,9 @@
 #define OMVLL_UTILS_H
 
 #include "llvm/ADT/StringRef.h"
-#include "llvm/ADT/Triple.h"
+#include "llvm/TargetParser/Triple.h"
 #include "llvm/IR/LLVMContext.h"
+#include "llvm/IR/PassManager.h"
 #include "llvm/Support/Error.h"
 #include <string>
 
@@ -46,5 +47,53 @@ llvm::Expected<std::unique_ptr<llvm::Module>>
 generateModule(llvm::StringRef Routine, const llvm::Triple &Triple,
                llvm::StringRef Extension, llvm::LLVMContext &Ctx,
                llvm::ArrayRef<std::string> ExtraArgs);
+
+struct ObfuscationConfig;
+
+class ScopedModuleDiffReporter {
+public:
+  ScopedModuleDiffReporter(const llvm::Module &M, ObfuscationConfig *UserConfig, llvm::StringRef PassName);
+  ~ScopedModuleDiffReporter();
+
+  ScopedModuleDiffReporter(ScopedModuleDiffReporter &&) = delete;
+  ScopedModuleDiffReporter(const ScopedModuleDiffReporter &) = delete;
+  ScopedModuleDiffReporter &operator=(ScopedModuleDiffReporter &&) = delete;
+  ScopedModuleDiffReporter &operator=(const ScopedModuleDiffReporter &) = delete;
+
+private:
+  const llvm::Module &Mod;
+  ObfuscationConfig *UserConfig = nullptr;
+  std::string PassName;
+  std::string OriginalIR;
+};
+
+
+class IRChangesMonitor {
+public:
+  IRChangesMonitor(const llvm::Module &M, ObfuscationConfig *UserConfig, llvm::StringRef PassName);
+
+  void operator=(bool ChangeReported) {
+    this->ChangeReported = ChangeReported;
+  }
+
+  void notify(bool TransformationReportedChange) {
+    ChangeReported = TransformationReportedChange;
+  }
+
+  llvm::PreservedAnalyses report();
+
+  IRChangesMonitor(IRChangesMonitor &&) = delete;
+  IRChangesMonitor(const IRChangesMonitor &) = delete;
+  IRChangesMonitor &operator=(IRChangesMonitor &&) = delete;
+  IRChangesMonitor &operator=(const IRChangesMonitor &) = delete;
+
+private:
+  const llvm::Module &Mod;
+  ObfuscationConfig *UserConfig = nullptr;
+  std::string PassName;
+  std::string OriginalIR;
+  bool ChangeReported;
+};
+
 }
 #endif

@@ -16,10 +16,11 @@
 #include <llvm/IR/Metadata.h>
 #include <llvm/IR/NoFolder.h>
 #include <llvm/MC/TargetRegistry.h>
-#include <llvm/MC/SubtargetFeature.h>
+#include <llvm/TargetParser/SubtargetFeature.h>
 
 #include <llvm/Support/RandomNumberGenerator.h>
 #include <llvm/Support/Alignment.h>
+#include <llvm/Support/MemoryBuffer.h>
 #include <llvm/Transforms/Utils/BasicBlockUtils.h>
 #include <llvm/Transforms/Utils/Cloning.h>
 
@@ -193,8 +194,13 @@ PreservedAnalyses BreakControlFlow::run(Module &M,
     Fs.push_back(&F);
   }
 
-  for (Function* F : Fs) {
-    Changed |= runOnFunction(*F);
+  {
+    PyConfig& config = PyConfig::instance();
+    ScopedModuleDiffReporter MayReportIRDiff(M, config.getUserConfig(), name());
+
+    for (Function* F : Fs) {
+      Changed |= runOnFunction(*F);
+    }
   }
 
   SINFO("[{}] Done!", name());

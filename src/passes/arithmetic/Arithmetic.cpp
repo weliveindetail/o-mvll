@@ -11,7 +11,9 @@
 #include "llvm/Transforms/Utils/BasicBlockUtils.h"
 #include "llvm/IR/NoFolder.h"
 #include "llvm/IR/PatternMatch.h"
+//#include "llvm/PassSupport.h"
 #include "llvm/Support/RandomNumberGenerator.h"
+#include <llvm/Support/raw_ostream.h>
 
 using namespace llvm;
 using namespace PatternMatch;
@@ -222,7 +224,7 @@ bool Arithmetic::runOnBasicBlock(BasicBlock &BB) {
 
           Result->copyMetadata(I, {LLVMContext::MD_dbg, LLVMContext::MD_annotation});
           Result->takeName(&I);
-          InstParent->getInstList().insert(InsertPos, Result);
+          Result->insertBefore(*InstParent, InsertPos);
           I.replaceAllUsesWith(Result);
           //ToErase.emplace_back(&I);
         }
@@ -239,9 +241,9 @@ PreservedAnalyses Arithmetic::run(Module &M,
                                   ModuleAnalysisManager &FAM) {
   RNG_ = M.createRNG(name());
   SDEBUG("Running {} on {}", name(), M.getName().str());
-  bool Changed = false;
 
   PyConfig& config = PyConfig::instance();
+  IRChangesMonitor MonitorChanges(M, config.getUserConfig(), name());
 
   auto& Fs = M.getFunctionList();
 
@@ -252,22 +254,25 @@ PreservedAnalyses Arithmetic::run(Module &M,
   std::transform(Fs.begin(), Fs.end(), std::back_inserter(LFs),
                  [] (Function& F) { return &F; });
 
+  {
+    ScopedModuleDiffReporter MayReportIRDiff(M, config.getUserConfig(), name());
 
-  for (Function* F : LFs) {
-    ArithmeticOpt opt = config.getUserConfig()->obfuscate_arithmetic(&M, F);
-    if (!opt)
-      continue;
+    for (Function* F : LFs) {
+      ArithmeticOpt opt = config.getUserConfig()->obfuscate_arithmetic(&M, F);
+      if (!opt)
+        continue;
 
-    opts_.insert({F, std::move(opt)});
+      opts_.insert({F, std::move(opt)});
 
-    for (BasicBlock& BB : *F) {
-      Changed |= runOnBasicBlock(BB);
+      for (BasicBlock& BB : *F) {
+        bool Changed = runOnBasicBlock(BB);
+        MonitorChanges.notify(Changed);
+      }
     }
   }
-  SINFO("[{}] Done!", name());
-  return Changed ? PreservedAnalyses::none() :
-                   PreservedAnalyses::all();
 
+  SINFO("[{}] Done!", name());
+  return MonitorChanges.report();
 }
 }
 

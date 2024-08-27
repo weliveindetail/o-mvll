@@ -10,7 +10,6 @@
 #include <llvm/Support/Path.h>
 #include <llvm/Support/YAMLParser.h>
 #include <llvm/Support/YAMLTraits.h>
-#include <llvm/Transforms/IPO/PassManagerBuilder.h>
 
 #include <dlfcn.h>
 
@@ -110,7 +109,7 @@ void omvll::init_yamlconfig() {
 
 
 PassPluginLibraryInfo getOMVLLPluginInfo() {
-  static std::atomic<bool> ONCE_FLAG = false;
+  static std::atomic<bool> ONCE_FLAG = 0;
   Logger::set_level(spdlog::level::level_enum::debug);
 
   omvll::init_yamlconfig();
@@ -124,14 +123,14 @@ PassPluginLibraryInfo getOMVLLPluginInfo() {
 
               PB.registerPipelineEarlySimplificationEPCallback(
                 [&] (ModulePassManager &MPM, OptimizationLevel opt) {
-                  if (ONCE_FLAG) {
-                    return true;
-                  }
+                  //if (ONCE_FLAG) {
+                  //  return true;
+                  //}
                   for (const std::string& pass : instance.get_passes()) {
                     REGISTER_PASS(omvll::AntiHook);
-                    REGISTER_PASS(omvll::StringEncoding);
+                    //REGISTER_PASS(omvll::StringEncoding);
 
-                    REGISTER_PASS(omvll::OpaqueFieldAccess);
+                    //REGISTER_PASS(omvll::OpaqueFieldAccess);
                     REGISTER_PASS(omvll::ControlFlowFlattening);
                     REGISTER_PASS(omvll::BreakControlFlow);
 

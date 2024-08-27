@@ -1,7 +1,7 @@
-; RUN: env OMVLL_CONFIG=%S/config_all.py clang -target aarch64-linux-android -fno-legacy-pass-manager -fpass-plugin=%libOMVLL -O0 -S -emit-llvm %s -o - | FileCheck %s --check-prefix=O0
-; RUN: env OMVLL_CONFIG=%S/config_all.py clang -target aarch64-linux-android -fno-legacy-pass-manager -fpass-plugin=%libOMVLL -O1 -S -emit-llvm %s -o - | FileCheck %s --check-prefix=O1
-; RUN: env OMVLL_CONFIG=%S/config_all.py clang -target arm64-apple-ios       -fno-legacy-pass-manager -fpass-plugin=%libOMVLL -O0 -S -emit-llvm %s -o - | FileCheck %s --check-prefix=O0
-; RUN: env OMVLL_CONFIG=%S/config_all.py clang -target arm64-apple-ios       -fno-legacy-pass-manager -fpass-plugin=%libOMVLL -O1 -S -emit-llvm %s -o - | FileCheck %s --check-prefix=O1
+; RUN: env OMVLL_CONFIG=%S/config_all.py clang -target aarch64-linux-android -fpass-plugin=%libOMVLL -O0 -S -emit-llvm %s -o - | FileCheck %s --check-prefix=O0
+; RUN: env OMVLL_CONFIG=%S/config_all.py clang -target aarch64-linux-android -fpass-plugin=%libOMVLL -O1 -S -emit-llvm %s -o - | FileCheck %s --check-prefix=O1
+; RUN: env OMVLL_CONFIG=%S/config_all.py clang -target arm64-apple-ios       -fpass-plugin=%libOMVLL -O0 -S -emit-llvm %s -o - | FileCheck %s --check-prefix=O0
+; RUN: env OMVLL_CONFIG=%S/config_all.py clang -target arm64-apple-ios       -fpass-plugin=%libOMVLL -O1 -S -emit-llvm %s -o - | FileCheck %s --check-prefix=O1
 
 define void @opaque_infinite_loop() {
 ; O0-LABEL: @opaque_infinite_loop

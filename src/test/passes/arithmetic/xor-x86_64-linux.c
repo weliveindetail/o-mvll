@@ -1,17 +1,17 @@
 // REQUIRES: x86-registered-target
 
-// RUN:                                        clang -target x86_64-pc-linux-gnu -fno-legacy-pass-manager                         -O1 -S %s -o - | FileCheck --check-prefix=R0 %s
-// RUN: env OMVLL_CONFIG=%S/config_rounds_0.py clang -target x86_64-pc-linux-gnu -fno-legacy-pass-manager -fpass-plugin=%libOMVLL -O1 -S %s -o - | FileCheck --check-prefix=R0 %s
-// RUN: env OMVLL_CONFIG=%S/config_rounds_1.py clang -target x86_64-pc-linux-gnu -fno-legacy-pass-manager -fpass-plugin=%libOMVLL -O1 -S %s -o - | FileCheck --check-prefix=R1 %s
-// RUN: env OMVLL_CONFIG=%S/config_rounds_2.py clang -target x86_64-pc-linux-gnu -fno-legacy-pass-manager -fpass-plugin=%libOMVLL -O1 -S %s -o - | FileCheck --check-prefix=R2 %s
-// RUN: env OMVLL_CONFIG=%S/config_rounds_3.py clang -target x86_64-pc-linux-gnu -fno-legacy-pass-manager -fpass-plugin=%libOMVLL -O1 -S %s -o - | FileCheck --check-prefix=R3 %s
+// RUN:                                        clang -target x86_64-pc-linux-gnu                         -O1 -S %s -o - | FileCheck --check-prefix=R0 %s
+// RUN: env OMVLL_CONFIG=%S/config_rounds_0.py clang -target x86_64-pc-linux-gnu -fpass-plugin=%libOMVLL -O1 -S %s -o - | FileCheck --check-prefix=R0 %s
+// RUN: env OMVLL_CONFIG=%S/config_rounds_1.py clang -target x86_64-pc-linux-gnu -fpass-plugin=%libOMVLL -O1 -S %s -o - | FileCheck --check-prefix=R1 %s
+// RUN: env OMVLL_CONFIG=%S/config_rounds_2.py clang -target x86_64-pc-linux-gnu -fpass-plugin=%libOMVLL -O1 -S %s -o - | FileCheck --check-prefix=R2 %s
+// RUN: env OMVLL_CONFIG=%S/config_rounds_3.py clang -target x86_64-pc-linux-gnu -fpass-plugin=%libOMVLL -O1 -S %s -o - | FileCheck --check-prefix=R3 %s
 
 // R0-LABEL: memcpy_xor:
 // R0:       .LBB0_2:
 // R0:           movzbl	(%rsi,%rcx), %edx
 // R0:           xorb	$35, %dl
 // R0:           movb	%dl, (%rdi,%rcx)
-// R0:           addq	$1, %rcx
+// R0:           incq	%rcx
 // R0:           cmpq	%rcx, %rax
 // R0:           jne	.LBB0_2
 
@@ -21,74 +21,82 @@
 // R1:           movzbl	(%rsi,%rcx), %edx
 // R1:           xorb	$35, %dl
 // R1:           movb	%dl, (%rdi,%rcx)
-// R1:           addq	$1, %rcx
+// R1:           incq %rcx
 // R1:           cmpq	%rcx, %rax
 // R1:           jne	.LBB0_2
 
 // R2-LABEL: memcpy_xor:
-// R2:       .LBB0_2:
-// R2:           movl	%r9d, %r8d
-// R2:           movsbl	(%rsi,%r8), %eax
-// R2:           movl	%eax, %ecx
-// R2:           notl	%ecx
-// R2:           orl	$-36, %ecx
-// R2:           leal	(%rax,%rcx), %r10d
-// R2:           addl	$36, %r10d
-// R2:           andl	$35, %eax
-// R2:           negl	%eax
-// R2:           movl	%r10d, %ecx
-// R2:           xorl	%eax, %ecx
-// R2:           andl	%r10d, %eax
-// R2:           leal	(%rcx,%rax,2), %eax
-// R2:           movb	%al, (%rdi,%r8)
-// R2:           movl	%r9d, %eax
-// R2:           notl	%eax
-// R2:           orl	$-2, %eax
-// R2:           addl	%r9d, %eax
-// R2:           movl	%r9d, %ecx
-// R2:           andl	$1, %ecx
-// R2:           leal	(%rcx,%rax), %r9d
-// R2:           addl	$2, %r9d
-// R2:           cmpl	%edx, %r9d
-// R2:           jb	.LBB0_2
+// R2-DAG:   .LBB0_2:
+// R2-DAG:       movl	%eax, %ecx
+// R2-DAG:       movsbl	(%rsi,%rcx), %r8d
+// R2-DAG:       movl	%r8d, %r9d
+// R2-DAG:       notl	%r9d
+// R2-DAG:       orl	$-36, %r9d
+// R2-DAG:       addl	%r8d, %r9d
+// R2-DAG:       addl	$36, %r9d
+// R2-DAG:       andl	$35, %r8d
+// R2-DAG:       negl	%r8d
+// R2-DAG:       movl	%r9d, %r10d
+// R2-DAG:       xorl	%r8d, %r10d
+// R2-DAG:       andl	%r9d, %r8d
+// R2-DAG:       leal	(%r10,%r8,2), %r8d
+// R2-DAG:       movb	%r8b, (%rdi,%rcx)
+// R2-DAG:       movl	%eax, %ecx
+// R2-DAG:       notl	%ecx
+// R2-DAG:       orl	$-2, %ecx
+// R2-DAG:       addl	%eax, %ecx
+// R2-DAG:       andl	$1, %eax
+// R2-DAG:       addl	%ecx, %eax
+// R2-DAG:       addl	$2, %eax
+// R2-DAG:       cmpl	%edx, %eax
+// R2-DAG:       jb	.LBB0_2
 
 // R3-LABEL: memcpy_xor:
-// R3:       .LBB0_2:
-// R3:           movl	%eax, %r8d
-// R3:           movzbl	(%rsi,%r8), %r10d
-// R3:           leal	35(%r10), %r9d
-// R3:           movl	%r10d, %ecx
-// R3:           notl	%ecx
-// R3:           orl	$-36, %ecx
-// R3:           addl	%r10d, %ecx
-// R3:           orl	$35, %r10d
-// R3:           movl	$-36, %r11d
-// R3:           subl	%ecx, %r11d
-// R3:           movl	%r11d, %ecx
-// R3:           xorl	%r9d, %ecx
-// R3:           andl	%r9d, %r11d
-// R3:           leal	(%rcx,%r11,2), %ecx
-// R3:           negl	%ecx
-// R3:           movl	%ecx, %r9d
-// R3:           xorl	%r10d, %r9d
-// R3:           andl	%r10d, %ecx
-// R3:           leal	(%r9,%rcx,2), %ecx
-// R3:           movb	%cl, (%rdi,%r8)
-// R3:           leal	1(%rax), %r8d
-// R3:           movl	%eax, %ecx
-// R3:           notl	%ecx
-// R3:           orl	$-2, %ecx
-// R3:           addl	%eax, %ecx
-// R3:           movl	$-2, %r9d
-// R3:           subl	%ecx, %r9d
-// R3:           movl	%r9d, %ecx
-// R3:           xorl	%r8d, %ecx
-// R3:           andl	%r8d, %r9d
-// R3:           orl	$1, %eax
-// R3:           addl	%ecx, %eax
-// R3:           leal	(%rax,%r9,2), %eax
-// R3:           cmpl	%edx, %eax
-// R3:           jb	.LBB0_2
+// R3-DAG:   .LBB0_2:
+// R3-DAG:     movl	%eax, %ecx
+// R3-DAG:     movzbl	(%rsi,%rcx), %r8d
+// R3-DAG:     leal	35(%r8), %r9d
+// R3-DAG:     movl	%r8d, %r10d
+// R3-DAG:     notl	%r10d
+// R3-DAG:     orl	$-36, %r10d
+// R3-DAG:     leal	(%r10,%r8), %r11d
+// R3-DAG:     addl	$36, %r11d
+// R3-DAG:     addl	%r8d, %r10d
+// R3-DAG:     movl	$-36, %r8d
+// R3-DAG:     subl	%r10d, %r8d
+// R3-DAG:     movl	%r8d, %r10d
+// R3-DAG:     xorl	%r9d, %r10d
+// R3-DAG:     andl	%r9d, %r8d
+// R3-DAG:     leal	(%r10,%r8,2), %r8d
+// R3-DAG:     negl	%r8d
+// R3-DAG:     movl	%r8d, %r9d
+// R3-DAG:     xorl	%r11d, %r9d
+// R3-DAG:     andl	%r11d, %r8d
+// R3-DAG:     leal	(%r9,%r8,2), %r8d
+// R3-DAG:     movb	%r8b, (%rdi,%rcx)
+// R3-DAG:     leal	1(%rax), %ecx
+// R3-DAG:     movl	%eax, %r8d
+// R3-DAG:     notl	%r8d
+// R3-DAG:     orl	$-2, %r8d
+// R3-DAG:     movl	$-2, %r10d
+// R3-DAG:     subl	%eax, %r10d
+// R3-DAG:     subl	%r8d, %r10d
+// R3-DAG:     movl	%r10d, %r9d
+// R3-DAG:     xorl	%ecx, %r9d
+// R3-DAG:     andl	%ecx, %r10d
+// R3-DAG:     leal	(%r9,%r10,2), %ecx
+// R3-DAG:     addl	$2, %eax
+// R3-DAG:     andl	%r8d, %eax
+// R3-DAG:     leal	-1(%rax), %r8d
+// R3-DAG:     andl	%ecx, %r8d
+// R3-DAG:     addl	%ecx, %r8d
+// R3-DAG:     addl	%eax, %r8d
+// R3-DAG:     notl	%ecx
+// R3-DAG:     negl	%eax
+// R3-DAG:     orl	%ecx, %eax
+// R3-DAG:     addl	%r8d, %eax
+// R3-DAG:     cmpl	%edx, %eax
+// R3-DAG:     jb	.LBB0_2
 
 void memcpy_xor(char *dst, const char *src, unsigned len) {
   for (unsigned i = 0; i < len; i += 1) {

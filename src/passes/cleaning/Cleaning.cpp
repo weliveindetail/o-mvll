@@ -14,7 +14,7 @@ PreservedAnalyses Cleaning::run(Module &M, ModuleAnalysisManager &FAM) {
   for (Function& F : M) {
     std::string Name  = demangle(F.getName().str());
     StringRef NRef = Name;
-    if (NRef.startswith("_JNIEnv::") && config.inline_jni_wrappers) {
+    if (NRef.starts_with("_JNIEnv::") && config.inline_jni_wrappers) {
       SINFO("Inlining {}", Name);
       F.addFnAttr(Attribute::AlwaysInline);
       Changed = true;

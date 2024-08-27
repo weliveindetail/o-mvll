@@ -20,10 +20,10 @@
 #include <llvm/Object/ObjectFile.h>
 #include <llvm/Passes/PassBuilder.h>
 #include <llvm/Support/Error.h>
-#include <llvm/Support/Host.h>
 #include <llvm/Support/MemoryBuffer.h>
 #include <llvm/Support/TargetSelect.h>
 #include <llvm/Support/raw_ostream.h>
+#include <llvm/TargetParser/Host.h>
 #include <llvm/Transforms/Utils/Cloning.h>
 
 using namespace llvm;
@@ -109,7 +109,7 @@ std::unique_ptr<MemoryBuffer> Jitter::jitAsm(const std::string& Asm, size_t Size
   orc::JITTargetMachineBuilder JTMB{llvm::Triple(TT)};
   JTMB.setRelocationModel(Reloc::Model::PIC_);
   JTMB.setCodeModel(CodeModel::Large);
-  JTMB.setCodeGenOptLevel(CodeGenOpt::Level::None);
+  JTMB.setCodeGenOptLevel(CodeGenOptLevel::None);
 
   Builder
     .setPlatformSetUp(orc::setUpInactivePlatform) // /!\Only for iOS???
@@ -144,7 +144,7 @@ std::unique_ptr<MemoryBuffer> Jitter::jitAsm(const std::string& Asm, size_t Size
     ExitOnErr(JITB->addObjectFile(std::move(Buff)));
 
     if (auto L = JITB->lookup(FNAME)) {
-      uint64_t Addr = L->getAddress();
+      uint64_t Addr = L->getValue();
       auto* ptr = reinterpret_cast<const char*>(Addr);
       return MemoryBuffer::getMemBufferCopy({ptr, FunSize});
     }

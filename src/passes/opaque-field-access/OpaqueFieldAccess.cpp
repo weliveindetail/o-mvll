@@ -69,7 +69,7 @@ bool OpaqueFieldAccess::runOnStructRead(BasicBlock& BB, LoadInst& Load,
   Value* newGEP =
     IRB.CreateBitCast(
       IRB.CreateInBoundsGEP(IRB.getInt8Ty(),
-                            IRB.CreateBitCast(GEP.getPointerOperand(), IRB.getInt8PtrTy()),
+                            IRB.CreateBitCast(GEP.getPointerOperand(), IRB.getPtrTy()),
                             opaqueOffset),
       GEP.getResultElementType()->getPointerTo());
 
@@ -108,7 +108,7 @@ bool OpaqueFieldAccess::runOnBufferRead(BasicBlock& BB, LoadInst& Load,
   Value* newGEP =
     IRB.CreateBitCast(
       IRB.CreateInBoundsGEP(IRB.getInt8Ty(),
-                            IRB.CreateBitCast(GEP.getPointerOperand(), IRB.getInt8PtrTy()),
+                            IRB.CreateBitCast(GEP.getPointerOperand(), IRB.getPtrTy()),
                             opaqueOffset),
       GEP.getResultElementType()->getPointerTo());
 
@@ -169,7 +169,7 @@ bool OpaqueFieldAccess::runOnLoad(LoadInst& Load) {
     Value* Target  = GEP->getPointerOperand();
     Type* TargetTy = Target->getType();
 
-    if (TargetTy->isPointerTy() && !TargetTy->isOpaquePointerTy()) {
+    if (TargetTy->isPointerTy() && !TargetTy->isPointerTy()) {
       TargetTy = TargetTy->getPointerElementType();
     }
 
@@ -304,7 +304,7 @@ bool OpaqueFieldAccess::runOnStructWrite(BasicBlock& BB, StoreInst& Store,
   Value* newGEP =
     IRB.CreateBitCast(
       IRB.CreateInBoundsGEP(IRB.getInt8Ty(),
-                            IRB.CreateBitCast(GEP.getPointerOperand(), IRB.getInt8PtrTy()),
+                            IRB.CreateBitCast(GEP.getPointerOperand(), IRB.getPtrTy()),
                             opaqueOffset),
       GEP.getResultElementType()->getPointerTo());
 
@@ -342,7 +342,7 @@ bool OpaqueFieldAccess::runOnBufferWrite(BasicBlock& BB, StoreInst& Store,
   Value* newGEP =
     IRB.CreateBitCast(
       IRB.CreateInBoundsGEP(IRB.getInt8Ty(),
-                            IRB.CreateBitCast(GEP.getPointerOperand(), IRB.getInt8PtrTy()),
+                            IRB.CreateBitCast(GEP.getPointerOperand(), IRB.getPtrTy()),
                             opaqueOffset),
       GEP.getResultElementType()->getPointerTo());
 
@@ -357,7 +357,7 @@ bool OpaqueFieldAccess::runOnStore(StoreInst& Store) {
     Value* Target  = GEP->getPointerOperand();
     Type* TargetTy = Target->getType();
 
-    if (TargetTy->isPointerTy() && !TargetTy->isOpaquePointerTy()) {
+    if (TargetTy->isPointerTy() && !TargetTy->isPointerTy()) {
       TargetTy = TargetTy->getPointerElementType();
     }
 

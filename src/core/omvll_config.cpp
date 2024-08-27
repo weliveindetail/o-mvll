@@ -6,9 +6,9 @@ config_t config;
 void init_default_config() {
   config.passes = {
     AntiHook::name().str(),
-    StringEncoding::name().str(),
+    //StringEncoding::name().str(),
 
-    OpaqueFieldAccess::name().str(),
+    //OpaqueFieldAccess::name().str(),
     ControlFlowFlattening::name().str(),
     BreakControlFlow::name().str(),
 

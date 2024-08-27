@@ -1,7 +1,6 @@
 #ifndef OMVLL_METADATA_H
 #define OMVLL_METADATA_H
 #include <variant>
-#include <llvm/ADT/Optional.h>
 #include <llvm/ADT/SmallVector.h>
 #include <llvm/ADT/ArrayRef.h>
 
@@ -47,7 +46,7 @@ struct MetaObf {
 void addMetadata(llvm::Instruction& I, MetaObf M);
 void addMetadata(llvm::Instruction& I, llvm::ArrayRef<MetaObf> M);
 llvm::SmallVector<MetaObf, 5> getObfMetadata(llvm::Instruction& I);
-llvm::Optional<MetaObf> getObf(llvm::Instruction& I, MObfTy M);
+std::optional<MetaObf> getObf(llvm::Instruction& I, MObfTy M);
 bool hasObf(llvm::Instruction& I, MObfTy M);
 
 }

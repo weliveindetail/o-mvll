@@ -20,7 +20,7 @@ message(STATUS "${PROJECT_NAME}: ${PROJECT_VERSION}")
 option(OMVLL_FORCE_LOG_DEBUG "Force the log debug output" OFF)
 option(OMVLL_PY_STANDALONE   "Build OMVLL as a standalone Python module" OFF)
 
-find_package(LLVM 14 REQUIRED CONFIG NO_DEFAULT_PATH)
+find_package(LLVM REQUIRED CONFIG NO_DEFAULT_PATH)
 
 set(PYTHON_VERSION "3" CACHE STRING "Python version")
 find_package(Python3 COMPONENTS Development Interpreter)
@@ -33,11 +33,11 @@ message(STATUS "Python lib:     ${Python3_LIBRARIES}")
 message(STATUS "Python include: ${Python3_INCLUDE_DIRS}")
 message(STATUS "Python interpreter: ${Python3_EXECUTABLE}")
 
-if(NOT "14" VERSION_EQUAL "${LLVM_VERSION_MAJOR}")
-  message(FATAL_ERROR "Found LLVM ${LLVM_VERSION_MAJOR}, but need LLVM 14")
+if(NOT ${LLVM_VERSION_MAJOR} VERSION_EQUAL 18)
+  message(WARNING "This hack is intended to link against LLVM 18, but we found LLVM ${LLVM_VERSION_MAJOR}")
+else()
+  message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
 endif()
-
-message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
 
 message("LLVM STATUS:
   Definitions ${LLVM_DEFINITIONS}

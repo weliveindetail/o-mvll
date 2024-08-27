@@ -1,8 +1,8 @@
 #include "omvll/utils.hpp"
 #include "omvll/log.hpp"
+#include "omvll/ObfuscationConfig.hpp"
 
 #include <llvm/ADT/Hashing.h>
-#include <llvm/ADT/Optional.h>
 #include <llvm/IR/BasicBlock.h>
 #include <llvm/IR/Function.h>
 #include <llvm/IR/InstIterator.h>
@@ -20,14 +20,15 @@
 #include <llvm/Support/raw_ostream.h>
 #include <llvm/Transforms/Utils/BasicBlockUtils.h>
 #include <llvm/Transforms/Utils/Local.h>
+#include <optional>
 
 using namespace llvm;
 
 namespace detail {
 
 static int runExecutable(SmallVectorImpl<StringRef> &Args,
-                         ArrayRef<Optional<StringRef>> Redirects = {}) {
-  return sys::ExecuteAndWait(Args[0], Args, None, Redirects);
+                         ArrayRef<std::optional<StringRef>> Redirects = {}) {
+  return sys::ExecuteAndWait(Args[0], Args, std::nullopt, Redirects);
 }
 
 static Expected<std::string> getIPhoneOSSDKPath() {
@@ -45,7 +46,7 @@ static Expected<std::string> getIPhoneOSSDKPath() {
 
   SmallVector<StringRef, 8> Args = {XcrunPath, "--sdk", "iphoneos",
                                     "--show-sdk-path"};
-  Optional<StringRef> Redirects[] = {None, StringRef(TempPath), None};
+  std::optional<StringRef> Redirects[] = {std::nullopt, StringRef(TempPath), std::nullopt};
 
   if (int EC = runExecutable(Args, Redirects))
     return createStringError(inconvertibleErrorCode(),
@@ -425,6 +426,44 @@ generateModule(StringRef Routine, const Triple &Triple, StringRef Extension,
 
     return MaybeModule;
   }
+}
+
+ScopedModuleDiffReporter::ScopedModuleDiffReporter(const llvm::Module &M, ObfuscationConfig *UserConfig, llvm::StringRef PassName) : Mod(M) {
+  if (UserConfig->has_report_diff_override()) {
+    this->UserConfig = UserConfig;
+    this->PassName = PassName.str();
+    llvm::raw_string_ostream(OriginalIR) << Mod;
+  }
+}
+
+ScopedModuleDiffReporter::~ScopedModuleDiffReporter() {
+  if (UserConfig) {
+    std::string ObfuscatedIR;
+    llvm::raw_string_ostream(ObfuscatedIR) << Mod;
+    if (OriginalIR != ObfuscatedIR)
+      UserConfig->report_diff(PassName, OriginalIR, ObfuscatedIR);
+  }
+}
+
+IRChangesMonitor::IRChangesMonitor(const llvm::Module &M, ObfuscationConfig *UserConfig, llvm::StringRef PassName) : Mod(M) {
+  if (UserConfig->has_report_diff_override()) {
+    this->UserConfig = UserConfig;
+    this->PassName = PassName.str();
+    llvm::raw_string_ostream(OriginalIR) << Mod;
+  }
+}
+
+PreservedAnalyses IRChangesMonitor::report() {
+  if (UserConfig) {
+    std::string ObfuscatedIR;
+    llvm::raw_string_ostream(ObfuscatedIR) << Mod;
+    if (OriginalIR != ObfuscatedIR) {
+      assert(!ChangeReported && "Textual IR change detected that transformation didn't report");
+      UserConfig->report_diff(PassName, OriginalIR, ObfuscatedIR);
+    }
+  }
+
+  return ChangeReported ? PreservedAnalyses::none() : PreservedAnalyses::all();
 }
 
 } // namespace omvll

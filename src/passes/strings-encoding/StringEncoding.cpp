@@ -12,7 +12,7 @@
 #include <llvm/ADT/STLExtras.h>
 #include <llvm/ADT/StringExtras.h>
 #include <llvm/Bitcode/BitcodeWriter.h>
-#include <llvm/CodeGen/StableHashing.h>
+#include <llvm/ADT/StableHashing.h>
 #include <llvm/Demangle/Demangle.h>
 #include <llvm/IR/Constant.h>
 #include <llvm/IR/Constants.h>
@@ -22,7 +22,7 @@
 #include <llvm/IR/Instruction.h>
 #include <llvm/IR/Instructions.h>
 #include <llvm/IR/NoFolder.h>
-#include <llvm/Support/Host.h>
+#include <llvm/TargetParser/Host.h>
 #include <llvm/Transforms/Utils/BasicBlockUtils.h>
 #include <llvm/Transforms/Utils/Cloning.h>
 #include <llvm/Transforms/Utils/ModuleUtils.h>
@@ -270,7 +270,7 @@ bool StringEncoding::injectOnStack(BasicBlock& BB, Instruction& I, Use& Op, Glob
     size_t j = indexes[i];
     // Access the char at EncPtr[i]
     Value *encGEP = IRB.CreateGEP(IRB.getInt8Ty(),
-                                  IRB.CreatePointerCast(EncPtr, IRB.getInt8PtrTy()),
+                                  IRB.CreatePointerCast(EncPtr, IRB.getPtrTy()),
                                   IRB.getInt32(j));
 
     // Load the encoded char
@@ -341,7 +341,7 @@ bool StringEncoding::injectOnStackLoop(BasicBlock& BB, Instruction& I, Use& Op, 
 
   AllocaInst *ClearBuffer =
       IRB.CreateAlloca(ArrayType::get(IRB.getInt8Ty(), str.size()));
-  auto *CastClearBuffer = IRB.CreateBitCast(ClearBuffer, IRB.getInt8PtrTy());
+  auto *CastClearBuffer = IRB.CreateBitCast(ClearBuffer, IRB.getPtrTy());
 
   AllocaInst* Key     = IRB.CreateAlloca(IRB.getInt64Ty());
   AllocaInst* StrSize = IRB.CreateAlloca(IRB.getInt32Ty());
@@ -372,7 +372,7 @@ bool StringEncoding::injectOnStackLoop(BasicBlock& BB, Instruction& I, Use& Op, 
     if (isa<ConstantExpr>(EncPtr))
       assert(extractGlobalVariable(cast<ConstantExpr>(EncPtr)) == &G &&
              "Previously extracted global variable need to match");
-    CastEncPtr = IRB.CreateBitCast(&G, IRB.getInt8PtrTy());
+    CastEncPtr = IRB.CreateBitCast(&G, IRB.getPtrTy());
   }
 
   auto *M = BB.getModule();
@@ -483,7 +483,7 @@ bool StringEncoding::processGlobal(BasicBlock& BB, Instruction&, Use& Op, Global
 
   auto JIT = StringEncoding::HOSTJIT->compile(*EI.HM);
   if (auto E = JIT->lookup("encode")) {
-    auto enc = reinterpret_cast<enc_routine_t>(E->getAddress());
+    auto enc = reinterpret_cast<enc_routine_t>(E->getValue());
     enc(encoded.data(), str.data(), key, str.size());
   } else {
     fatalError("Can't find 'encode' in the routine");
@@ -523,7 +523,7 @@ bool StringEncoding::processGlobal(BasicBlock& BB, Instruction&, Use& Op, Global
   LoadInst* LStrSize = IRB.CreateLoad(IRB.getInt32Ty(), StrSize);
   auto* VStrSize = IRB.CreateBitCast(LStrSize, IRB.getInt32Ty());
 
-  auto* DataPtr = IRB.CreatePointerCast(EncPtr, IRB.getInt8PtrTy());
+  auto* DataPtr = IRB.CreatePointerCast(EncPtr, IRB.getPtrTy());
 
   Function* FDecode = EI.TM->getFunction("decode");
   if (FDecode == nullptr) {
@@ -637,7 +637,7 @@ bool StringEncoding::processOnStackLoop(BasicBlock& BB, Instruction& I, Use& Op,
 
   auto JIT = StringEncoding::HOSTJIT->compile(*EI.HM);
   if (auto E = JIT->lookup("encode")) {
-    auto enc = reinterpret_cast<enc_routine_t>(E->getAddress());
+    auto enc = reinterpret_cast<enc_routine_t>(E->getValue());
     enc(encoded.data(), str.data(), key, str.size());
   } else {
     fatalError("Can't find 'encode' in the routine");
